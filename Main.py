@@ -212,8 +212,7 @@ async def mute(ctx, members: commands.Greedy[discord.Member], mute_minutes: int 
 async def poll(ctx, *, message):
 
     polls = discord.Embed(title="Idea", color=0x31d2dd)
-    polls.set_thumbnail(
-        url="https://cdn.discordapp.com/attachments/810546790172590166/814071210233167892/Green_School_Science_Club_Logo_2.png")
+    polls..set_thumbnail(url=server.icon_url)
     polls.add_field(name=message, value=ctx.message.author, inline=False)
     polls.set_footer(
         text=f"{ctx.guild.name}  •  {datetime.strftime(datetime.now(), '%d.%m.%Y at %I:%M %p')}")
@@ -260,6 +259,10 @@ async def ping(ctx):
 @client.command()
 async def creator(ctx):
     await ctx.send("Its the almighty `JohanSanSebastian#1384`")
+
+@client.command()
+async def source(ctx):
+    await ctx.send("You can find all of source code at ")
 
 ###################################### Echo Command ######################################
 
@@ -477,6 +480,7 @@ async def user(ctx, *, user: discord.Member = None):
 async def help(ctx):
     help_embed = discord.Embed(title="All the commands of GengBot", url="https://dis.gd/threads",
                                description="To get this message use `!help`", color=0x25e432)
+    help_embed.set_thumbnail(url=server.icon_url)
     help_embed.set_author(name="Help")
     help_embed.add_field(name="1. User Commands",
                          value="Commands all users can use", inline=False)
