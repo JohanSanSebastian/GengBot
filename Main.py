@@ -8,6 +8,7 @@ import aiohttp
 from config import bot_token, join_role, wlcm_chnl, mod_chnl, poll_chnl
 from datetime import datetime
 from discord.ext import commands
+from discord.utils import get
 
 intents = discord.Intents().all()
 intents.members = True
@@ -187,7 +188,8 @@ async def mute(ctx, members: commands.Greedy[discord.Member], mute_minutes: int 
         await ctx.send("You need to name someone to mute")
         return
 
-    muted_role = get(ctx.guild.roles, name="Muted")
+    mute_id = 782976029803151412
+    muted_role = get(ctx.guild.roles, id=mute_id)
 
     for member in members:
         if ctx.author.bot == member:
