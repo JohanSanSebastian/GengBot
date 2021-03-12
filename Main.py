@@ -262,7 +262,7 @@ async def creator(ctx):
 
 @client.command()
 async def source(ctx):
-    await ctx.send("You can find all of source code at: https://github.com/JohanSanSebastian/GengBot")
+    await ctx.send("You can find all of source code my at: https://github.com/JohanSanSebastian/GengBot")
 
 ###################################### Echo Command ######################################
 
