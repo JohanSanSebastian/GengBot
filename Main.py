@@ -212,7 +212,7 @@ async def mute(ctx, members: commands.Greedy[discord.Member], mute_minutes: int 
 async def poll(ctx, *, message):
 
     polls = discord.Embed(title="Idea", color=0x31d2dd)
-    polls..set_thumbnail(url=server.icon_url)
+    polls.set_thumbnail(url=server.icon_url)
     polls.add_field(name=message, value=ctx.message.author, inline=False)
     polls.set_footer(
         text=f"{ctx.guild.name}  •  {datetime.strftime(datetime.now(), '%d.%m.%Y at %I:%M %p')}")
