@@ -23,7 +23,7 @@ invites = {}
 @client.event
 async def on_member_join(member):
     wlcmChannel = client.get_channel(wlcm_chnl)
-    await wlcmChannel.send(f'Welcome {member.mention}........To the official FarmTech Server')
+    await wlcmChannel.send(f'Welcome {member.mention}........To the official Geng Geng Server')
 
     role = member.guild.get_role(join_role)
     await member.add_roles(role)
@@ -55,7 +55,7 @@ async def on_member_remove(member):
 @client.event
 async def on_ready():
     print(f'Bot connected as {client.user}')
-    await client.change_presence(activity=discord.Game('Helping FarmTech Members'))
+    await client.change_presence(activity=discord.Game('on the Geng Geng Server'))
 
     for guild in client.guilds:
         invites[guild.id] = await guild.invites()
@@ -103,7 +103,7 @@ async def kick(ctx, user: discord.Member, *, reason=None):
 
 
 @client.command()
-@commands.has_any_role("Mod")
+@commands.has_any_role("Admin")
 @commands.has_permissions(ban_members=True)
 async def ban(ctx, user: discord.Member, *, reason=None):
     if reason == None:
@@ -179,6 +179,7 @@ async def unbanMember(ctx, *, member):
 
 
 @client.command()
+@commands.has_any_role("Admin")
 async def mute(ctx, members: commands.Greedy[discord.Member], mute_minutes: int = 10, *, reason: str = "None"):
     """Mass mute members with an optional mute_minutes parameter to time it"""
 
@@ -225,6 +226,7 @@ async def poll(ctx, *, message):
 
 
 @client.command()
+@commands.has_any_role("Admin")
 async def clear(ctx, amount=1):
     await ctx.channel.purge(limit=amount+1)
 
@@ -232,7 +234,7 @@ async def clear(ctx, amount=1):
 
 
 @client.command()
-@commands.has_any_role("Head")
+@commands.has_any_role("Owner")
 @commands.has_permissions(ban_members=True)
 async def nuke(ctx):
     embed = discord.Embed(
@@ -253,6 +255,10 @@ async def nuke(ctx):
 async def ping(ctx):
     await ctx.send(f'Pong! Its `{round(client.latency * 1000)}ms`')
 
+@client.command()
+async def creator(ctx):
+    await ctx.send("Its the almighty `JohanSanSebastian#1384`")
+
 ###################################### Echo Command ######################################
 
 
@@ -263,19 +269,17 @@ async def echo(ctx, *, arg):
 ###################################### Addrole Command ######################################
 
 
-@client.command()
-async def addrole(ctx, *, member: discord.Member = None, role: discord.Role):
-
-    if member is None:
-        member = ctx.message.author
-
-    await member.add_roles(role)
-    await ctx.send(f'{member} has been assigned the role {role}')
+@client.command(pass_context=True)
+@commands.has_any_role("Owner")
+async def addrole(ctx, user: discord.Member, role: discord.Role):
+    await user.add_roles(role)
+    await ctx.send(f"{ctx.author.mention} has given the user {user.mention} the role `{role.name}`")
 
 ####################################### Embed Command ####################################
 
 
 @client.command()
+@commands.has_any_role("Owner")
 async def embed(ctx):
 
     await ctx.send("What is your embed Title?")
@@ -320,67 +324,46 @@ async def embed(ctx):
 
 ######################################## Eval Command ####################################
 
-def insert_returns(body):
-    # insert return stmt if the last expression is a expression statement
-    if isinstance(body[-1], ast.Expr):
-        body[-1] = ast.Return(body[-1].value)
-        ast.fix_missing_locations(body[-1])
-
-    # for if statements, we insert returns into the body and the orelse
-    if isinstance(body[-1], ast.If):
-        insert_returns(body[-1].body)
-        insert_returns(body[-1].orelse)
-
-    # for with blocks, again we insert returns into the body
-    if isinstance(body[-1], ast.With):
-        insert_returns(body[-1].body)
-
-@client.command(pass_context=True, hidden=True, name='eval')
-async def _eval(self, ctx, *, body: str):
-    """Evaluates a code"""
-
+@client.command(name="eval")
+@commands.is_owner()
+async def eval_fn(ctx, *, code):
+    language_specifiers = ["python", "py", "javascript", "js", "html", "css", "php", "md", "markdown", "go", "golang", "c", "c++", "cpp", "c#", "cs", "csharp", "java", "ruby", "rb", "coffee-script", "coffeescript", "coffee", "bash", "shell", "sh", "json", "http", "pascal", "perl", "rust", "sql", "swift", "vim", "xml", "yaml"]
+    loops = 0
+    while code.startswith("`"):
+        code = "".join(list(code)[1:])
+        loops += 1
+        if loops == 3:
+            loops = 0
+            break
+    for language_specifier in language_specifiers:
+        if code.startswith(language_specifier):
+            code = code.lstrip(language_specifier)
+    while code.endswith("`"):
+        code = "".join(list(code)[0:-1])
+        loops += 1
+        if loops == 3:
+            break
+    code = "\n".join(f"    {i}" for i in code.splitlines()) #Adds an extra layer of indentation
+    code = f"async def eval_expr():\n{code}" #Wraps the code inside an async function
+    def send(text): #Function for sending message to discord if code has any usage of print function
+        client.loop.create_task(ctx.send(text))
     env = {
-        'bot': self.bot,
-        'ctx': ctx,
-        'channel': ctx.channel,
-        'author': ctx.author,
-        'guild': ctx.guild,
-        'message': ctx.message,
-        '_': self._last_result
+        "bot": client,
+        "client": client,
+        "ctx": ctx,
+        "print": send,
+        "_author": ctx.author,
+        "_message": ctx.message,
+        "_channel": ctx.channel,
+        "_guild": ctx.guild,
+        "_me": ctx.me
     }
-
     env.update(globals())
-
-    body = self.cleanup_code(body)
-    stdout = io.StringIO()
-
-    to_compile = f'async def func():\n{textwrap.indent(body, "  ")}'
-
-    try:
-        exec(to_compile, env)
-    except Exception as e:
-        return await ctx.send(f'```py\n{e.__class__.__name__}: {e}\n```')
-
-    func = env['func']
-    try:
-        with redirect_stdout(stdout):
-            ret = await func()
-    except Exception as e:
-        value = stdout.getvalue()
-        await ctx.send(f'```py\n{value}{traceback.format_exc()}\n```')
-    else:
-        value = stdout.getvalue()
-        try:
-            await ctx.message.add_reaction('\u2705')
-        except:
-            pass
-
-        if ret is None:
-            if value:
-                await ctx.send(f'```py\n{value}\n```')
-        else:
-            self._last_result = ret
-            await ctx.send(f'```py\n{value}{ret}\n```')
+    exec(code, env)
+    eval_expr = env["eval_expr"]
+    result = await eval_expr()
+    if result:
+        await ctx.send(result)
 
 ######################################### Meme Command ####################################
 
@@ -390,7 +373,7 @@ async def meme(ctx):
     embed = discord.Embed(title="Meme", description=None)
 
     async with aiohttp.ClientSession() as cs:
-        async with cs.get('https://www.reddit.com/r/wholesomememes/new.json?sort=hot') as r:
+        async with cs.get('https://www.reddit.com/r/dankmemes/new.json?sort=hot') as r:
             res = await r.json()
             embed.set_image(url=res['data']['children']
                             [random.randint(0, 25)]['data']['url'])
@@ -485,34 +468,14 @@ async def user(ctx, *, user: discord.Member = None):
         return await ctx.send(embed=embed)
 
 
-######################################## Message Delete Log #####################################
-
-@client.command()
-async def on_message_delete(ctx, message):
-    delete_embed = discord.Embed(
-        colour=message.author.color,
-        timestamp=datetime.datetime.utcnow(),
-        description='Message Deleted in channel {}'.format(message.channel.mention)).set_author(
-        name=message.author,
-        icon_url=message.author.avatar_url)
-    delete_embed.add_field(name="Message", value=message)
-    delete_embed.set_footer(text='Timezone: GMT+4',
-                            icon_url=ctx.bot.user.avatar_url)
-
-    global mod_channel
-    await mod_channel.send(delete_embed)
-
-
 ######################################## Help Command #####################################
 
 
 @client.command()
 async def help(ctx):
-    help_embed = discord.Embed(title="All the commands of FarmTechBot", url="https://www.farmtech.gq",
+    help_embed = discord.Embed(title="All the commands of GengBot", url="https://dis.gd/threads",
                                description="To get this message use `!help`", color=0x25e432)
     help_embed.set_author(name="Help")
-    help_embed.set_thumbnail(
-        url="https://cdn.discordapp.com/attachments/810546790172590166/814071210233167892/Green_School_Science_Club_Logo_2.png")
     help_embed.add_field(name="1. User Commands",
                          value="Commands all users can use", inline=False)
     help_embed.add_field(
@@ -526,14 +489,12 @@ async def help(ctx):
 
     help_embed.add_field(
         name="`!hack`", value="Hack your friends with this command", inline=True)
-    
-    help_embed.add_field(name="2. Mod Commands",
-                         value="Commands only Mod/Admin/Head can use", inline=False)
+
+    help_embed.add_field(name="2. Admin Commands",
+                         value="Commands only Admin/Head can use", inline=False)
     help_embed.add_field(name="`!ban`", value="To ban a user", inline=True)
     help_embed.add_field(
         name="`!clear`", value="To delete mulitple messages", inline=True)
-    help_embed.add_field(name="3. Admin Commands",
-                         value="Commands only Admin/Head can use", inline=False)
     help_embed.add_field(
         name="`!kick`", value="To directly kick a member", inline=True)
     help_embed.add_field(
@@ -546,7 +507,9 @@ async def help(ctx):
     help_embed.add_field(
         name="`!embed`", value="To send an embed", inline=True)
     help_embed.add_field(
-        name="`!uptime`", value="To find out the uptime of the bot", inline=True)
+        name="`!uptime`", value="To find out the uptime of the bot", inline=False)
+    help_embed.add_field(
+        name="`!addrole`", value="To give any role to a user", inline=True)
 
     help_embed.set_footer(
         text=f"{ctx.guild.name}  •  {datetime.strftime(datetime.now(), '%d.%m.%Y at %I:%M %p')}")
