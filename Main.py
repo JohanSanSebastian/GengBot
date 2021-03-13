@@ -5,7 +5,7 @@ import random
 import re
 import aiohttp
 
-from config import bot_token, join_role, wlcm_chnl, mod_chnl, poll_chnl
+from config import bot_token, join_role, mute_role, wlcm_chnl, mod_chnl, poll_chnl
 from datetime import datetime
 from discord.ext import commands
 from discord.utils import get
@@ -188,8 +188,7 @@ async def mute(ctx, members: commands.Greedy[discord.Member], mute_minutes: int 
         await ctx.send("You need to name someone to mute")
         return
 
-    mute_id = 782976029803151412
-    muted_role = get(ctx.guild.roles, id=mute_id)
+    muted_role = get(ctx.guild.roles, id=mute_role)
 
     for member in members:
         if ctx.author.bot == member:
@@ -279,6 +278,25 @@ async def echo(ctx, *, arg):
 async def addrole(ctx, user: discord.Member, role: discord.Role):
     await user.add_roles(role)
     await ctx.send(f"{ctx.author.mention} has given the user {user.mention} the role `{role.name}`")
+
+####################################### Remove roles Command ####################################
+
+@client.command(pass_context=True)
+async def removerole(ctx, user: discord.Member, role: discord.Role):
+    await user.remove_roles(role)
+    await ctx.send(f"{ctx.author.mention} has removed the role `{role.name}` from {user.mention}")
+
+####################################### Find roles Command ####################################
+
+class MemberRoles(commands.MemberConverter):
+    async def convert(self, ctx, argument):
+        member = await super().convert(ctx, argument)
+        return [role.name for role in member.roles[1:]] # Remove everyone role!
+
+@client.command()
+async def roles(ctx, *, member: MemberRoles):
+    """Tells you a member's roles."""
+    await ctx.send('I see the roles ' + ', '.join(member))
 
 ####################################### Embed Command ####################################
 
