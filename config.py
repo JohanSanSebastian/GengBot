@@ -3,4 +3,5 @@ join_role =
 mute_role =
 wlcm_chnl = 
 mod_chnl = 
-poll_chnl = 
+poll_chnl =
+stat_chnl = 

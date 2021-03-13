@@ -5,7 +5,7 @@ import random
 import re
 import aiohttp
 
-from config import bot_token, join_role, mute_role, wlcm_chnl, mod_chnl, poll_chnl
+from config import bot_token, join_role, mute_role, wlcm_chnl, mod_chnl, poll_chnl, stat_chnl
 from datetime import datetime
 from discord.ext import commands
 from discord.utils import get
@@ -29,6 +29,11 @@ async def on_member_join(member):
     role = member.guild.get_role(join_role)
     await member.add_roles(role)
 
+    member_no = len(set(client.get_all_members()))
+    channel = client.get_channel(stat_chnl)
+
+    await channel.edit(name=f"Members:{member_no}")
+
     invites_before_join = invites[member.guild.id]
     invites_after_join = await member.guild.invites()
 
@@ -50,6 +55,12 @@ async def on_member_join(member):
 @client.event
 async def on_member_remove(member):
     invites[member.guild.id] = await member.guild.invites()
+    
+
+    member_no = len(set(client.get_all_members()))
+    channel = client.get_channel(stat_chnl)
+
+    await channel.edit(name=f"Members:{member_no}")
 
 ######################################### On ready #######################################
 
@@ -297,6 +308,14 @@ class MemberRoles(commands.MemberConverter):
 async def roles(ctx, *, member: MemberRoles):
     """Tells you a member's roles."""
     await ctx.send('I see the roles ' + ', '.join(member))
+
+
+@client.command(aliases=['make_role'])
+@commands.has_permissions(manage_roles=True)
+async def create_role(ctx, *, name):
+	guild = ctx.guild
+	await guild.create_role(name=name)
+	await ctx.send(f'Role `{name}` has been created')
 
 ####################################### Embed Command ####################################
 
